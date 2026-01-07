@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monopoly Money Manager (Multiplayer)</title>
+
+  <style>
+    :root {
+      --bg0: #070b14;
+      --bg1: #0b1220;
+      --card: rgba(18, 26, 43, .9);
+      --line: rgba(255, 255, 255, .08);
+      --muted: #9fb0d6;
+      --text: #eaf1ff;
+      --accent: #7c5cff;
+      --accent2: #24d6a1;
+      --danger: #ff5c7a;
+      --shadow: 0 20px 60px rgba(0, 0, 0, .35);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 15% -10%, rgba(124, 92, 255, .28), transparent 60%),
+        radial-gradient(700px 360px at 85% 0%, rgba(36, 214, 161, .18), transparent 60%),
+        radial-gradient(900px 520px at 50% 110%, rgba(255, 92, 122, .10), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 16px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(7, 11, 20, .65);
+      backdrop-filter: blur(10px);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: .2px
+    }
+
+    header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12.5px
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.25fr .75fr;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr
+      }
+
+      header {
+        position: static
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .row>* {
+      flex: 1
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px
+    }
+
+    input,
+    select,
+    button,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(12, 19, 36, .7);
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(124, 92, 255, .55);
+      box-shadow: 0 0 0 4px rgba(124, 92, 255, .12);
+    }
+
+    textarea {
+      min-height: 120px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, rgba(124, 92, 255, 1), rgba(36, 214, 161, 1));
+      box-shadow: 0 12px 30px rgba(124, 92, 255, .22);
+      font-weight: 700;
+    }
+
+    .btn:hover {
+      filter: brightness(1.05)
+    }
+
+    .btn.secondary {
+      background: rgba(17, 26, 47, .9);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      font-weight: 600;
+    }
+
+    .btn.danger {
+      background: rgba(255, 92, 122, .14);
+      border: 1px solid rgba(255, 92, 122, .35);
+      color: #ffd9e1;
+      box-shadow: none;
+      font-weight: 700;
+    }
+
+    .btn.small {
+      padding: 9px 10px;
+      border-radius: 12px;
+      width: auto
+    }
+
+    /* status pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(12, 19, 36, .6);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .mono {
+      font-variant-numeric: tabular-nums
+    }
+
+    .ok {
+      color: #a8ffb5
+    }
+
+    .warn {
+      color: #ffd6a8
+    }
+
+    .err {
+      color: #ffb0b0
+    }
+
+    .players {
+      display: grid;
+      gap: 10px
+    }
+
+    .player {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(12, 19, 36, .55);
+    }
+
+    .player .name {
+      font-weight: 800
+    }
+
+    .player .bal {
+      font-variant-numeric: tabular-nums;
+      color: #dbe7ff
+    }
+
+    .player .mini {
+      display: flex;
+      gap: 8px
+    }
+
+    .log {
+      max-height: 420px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(12, 19, 36, .55)
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      font-size: 13px;
+      vertical-align: top
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: rgba(12, 19, 36, .75);
+      color: var(--muted);
+      text-align: left
+    }
+
+    .right {
+      text-align: right
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    @media (max-width:520px) {
+      .split {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* toast */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(12, 19, 36, .92);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      display: none;
+      max-width: min(520px, calc(100vw - 24px));
+      font-size: 13px;
+    }
+
+    .toast.show {
+      display: block;
+      animation: pop .2s ease-out
+    }
+
+    @keyframes pop {
+      from {
+        transform: translateX(-50%) translateY(10px);
+        opacity: .2
+      }
+
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Monopoly Money Manager — Multiplayer</h1>
+    <p>Masuk dengan room code yang sama untuk sync realtime (Firebase Realtime Database).</p>
+  </header>
+
+  <main>
+    <!-- LEFT -->
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:16px">Multiplayer Room</h2>
+
+      <div class="row" style="align-items:end">
+        <div>
+          <label>Room code</label>
+          <input id="roomCode" placeholder="Mis: MONO123" maxlength="24" />
+        </div>
+        <div>
+          <label>Nama kamu (opsional)</label>
+          <input id="nick" placeholder="Mis: Andi (HP)" maxlength="32" />
+        </div>
+        <div style="flex:0.7">
+          <label>&nbsp;</label>
+          <button id="joinBtn" class="btn">Join / Sync</button>
+        </div>
+        <div style="flex:0.7">
+          <label>&nbsp;</label>
+          <button id="leaveBtn" class="btn secondary">Leave</button>
+        </div>
+        <div style="flex:0.9">
+          <label>&nbsp;</label>
+          <button id="copyLinkBtn" class="btn secondary">Copy Link Room</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="row">
+        <span class="pill">Status: <b id="syncStatus" class="warn">OFFLINE</b></span>
+        <span class="pill">Online: <b id="onlineCount" class="mono">0</b></span>
+        <span class="pill">Last update: <b id="lastUpdate" class="mono">—</b></span>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+      <h2 style="margin:0 0 10px;font-size:16px">Pemain</h2>
+      <div class="row" style="align-items:end">
+        <div>
+          <label>Nama pemain</label>
+          <input id="playerName" placeholder="Mis: Budi" />
+        </div>
+        <div>
+          <label>Saldo awal</label>
+          <input id="playerStart" type="number" step="1" value="1500" />
+        </div>
+        <div style="flex:0.6">
+          <label>&nbsp;</label>
+          <button id="addPlayerBtn" class="btn">Tambah</button>
+        </div>
+      </div>
+
+      <div style="margin:12px 0" class="row">
+        <span class="pill">Total uang pemain: <b id="totalPlayers" class="mono">0</b></span>
+        <span class="pill"><span class="muted">Bank dianggap “tak terbatas”</span></span>
+      </div>
+
+      <div class="players" id="playersList"></div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+      <h2 style="margin:0 0 10px;font-size:16px">Transaksi</h2>
+      <div class="row">
+        <div>
+          <label>Tipe</label>
+          <select id="txType">
+            <option value="transfer">Transfer antar pemain</option>
+            <option value="bankIn">Terima dari Bank</option>
+            <option value="bankOut">Bayar ke Bank</option>
+            <option value="adjust">Koreksi saldo (set/plus/minus)</option>
+          </select>
+        </div>
+        <div>
+          <label>Jumlah</label>
+          <input id="txAmount" type="number" step="1" placeholder="Mis: 200" />
+        </div>
+      </div>
+
+      <div id="transferFields" class="row" style="margin-top:10px">
+        <div>
+          <label>Dari</label>
+          <select id="txFrom"></select>
+        </div>
+        <div>
+          <label>Ke</label>
+          <select id="txTo"></select>
+        </div>
+      </div>
+
+      <div id="singleFields" class="row" style="margin-top:10px; display:none">
+        <div>
+          <label>Pemain</label>
+          <select id="txPlayer"></select>
+        </div>
+      </div>
+
+      <div id="adjustFields" class="row" style="margin-top:10px; display:none">
+        <div>
+          <label>Mode koreksi</label>
+          <select id="adjustMode">
+            <option value="plus">Tambah (+)</option>
+            <option value="minus">Kurangi (-)</option>
+            <option value="set">Set jadi</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label>Catatan (opsional)</label>
+        <input id="txNote" placeholder="Mis: bayar sewa, ambil GO, pajak, dll." />
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="doTxBtn" class="btn">Simpan Transaksi</button>
+        <button id="undoBtn" class="btn secondary">Undo Terakhir</button>
+        <button id="resetBtn" class="btn danger">Reset Semua</button>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="card">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h2 style="margin:0;font-size:16px">Riwayat</h2>
+        <span class="badge" id="logCount">0 transaksi</span>
+      </div>
+
+      <div class="log" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:92px">Waktu</th>
+              <th>Detail</th>
+              <th class="right" style="width:100px">Jumlah</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+      <h2 style="margin:0 0 10px;font-size:16px">Backup (opsional)</h2>
+      <div class="split">
+        <button id="exportBtn" class="btn secondary">Export JSON</button>
+        <button id="importBtn" class="btn">Import JSON</button>
+      </div>
+      <div style="margin-top:10px">
+        <label>Data JSON</label>
+        <textarea id="jsonBox" placeholder="Export untuk salin. Import untuk muat."></textarea>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+      <h2 style="margin:0 0 10px;font-size:16px">Online di Room</h2>
+      <div id="onlineList" class="muted" style="font-size:13px;line-height:1.5">—</div>
+    </aside>
+  </main>
+
+  <script type="module">
+    // ==== Config kamu ====
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZdFGdPZx854M4csetrOF3n17uWVSFQB4",
+      authDomain: "monopoli-7729e.firebaseapp.com",
+      databaseURL: "https://monopoli-7729e-default-rtdb.firebaseio.com",
+      projectId: "monopoli-7729e",
+      storageBucket: "monopoli-7729e.firebasestorage.app",
+      messagingSenderId: "485794843672",
+      appId: "1:485794843672:web:9c98be7e10872316a3476d",
+      measurementId: "G-EV9TBLSGBB"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import {
+      getDatabase, ref, set, onValue, off,
+      serverTimestamp, onDisconnect, remove
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+    const $ = (id) => document.getElementById(id);
+
+    const roomCodeEl = $("roomCode");
+    const nickEl = $("nick");
+    const joinBtn = $("joinBtn");
+    const leaveBtn = $("leaveBtn");
+    const copyLinkBtn = $("copyLinkBtn");
+
+    const syncStatus = $("syncStatus");
+    const onlineCount = $("onlineCount");
+    const onlineList = $("onlineList");
+    const lastUpdate = $("lastUpdate");
+
+    const playerName = $("playerName");
+    const playerStart = $("playerStart");
+    const addPlayerBtn = $("addPlayerBtn");
+
+    const playersList = $("playersList");
+    const totalPlayers = $("totalPlayers");
+
+    const txType = $("txType");
+    const txAmount = $("txAmount");
+    const txFrom = $("txFrom");
+    const txTo = $("txTo");
+    const txPlayer = $("txPlayer");
+    const txNote = $("txNote");
+    const doTxBtn = $("doTxBtn");
+    const undoBtn = $("undoBtn");
+    const resetBtn = $("resetBtn");
+
+    const transferFields = $("transferFields");
+    const singleFields = $("singleFields");
+    const adjustFields = $("adjustFields");
+    const adjustMode = $("adjustMode");
+
+    const logBody = $("logBody");
+    const logCount = $("logCount");
+
+    const exportBtn = $("exportBtn");
+    const importBtn = $("importBtn");
+    const jsonBox = $("jsonBox");
+
+    // toast
+    const toastEl = document.createElement("div");
+    toastEl.className = "toast";
+    document.body.appendChild(toastEl);
+    let toastTimer = null;
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+    function uid() { return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+    function fmt(n) { return Number(n || 0).toLocaleString("id-ID"); }
+    function nowHM() {
+      const d = new Date();
+      return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    }
+
+    // Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // State
+    let state = { players: [], log: [], updatedAt: 0, updatedBy: "" };
+
+    let roomCode = "";
+    const clientId = uid();
+    let unsubState = null;
+    let unsubPresence = null;
+
+    function setStatus(text, kind) {
+      syncStatus.textContent = text;
+      syncStatus.className = kind === "ok" ? "ok" : kind === "err" ? "err" : "warn";
+    }
+
+    function normalizeRoomCode(raw) {
+      return raw.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 24);
+    }
+
+    function roomRefs(code) {
+      const base = `rooms/${code}`;
+      return {
+        stateRef: ref(db, `${base}/state`),
+        presenceRef: ref(db, `${base}/presence/${clientId}`),
+        presenceListRef: ref(db, `${base}/presence`),
+      };
+    }
+
+    async function leaveRoom(removePresence = true) {
+      if (!roomCode) return;
+
+      const { presenceRef, presenceListRef, stateRef } = roomRefs(roomCode);
+
+      try {
+        if (unsubState) { unsubState(); unsubState = null; }
+        if (unsubPresence) { unsubPresence(); unsubPresence = null; }
+
+        off(stateRef);
+        off(presenceListRef);
+
+        if (removePresence) await remove(presenceRef);
+      } catch (e) {
+        console.warn(e);
+      }
+
+      roomCode = "";
+      onlineCount.textContent = "0";
+      onlineList.textContent = "—";
+      lastUpdate.textContent = "—";
+      setStatus("OFFLINE", "warn");
+    }
+
+    async function pushState() {
+      if (!roomCode) return;
+
+      const { stateRef } = roomRefs(roomCode);
+      state.updatedAt = Date.now();
+      state.updatedBy = (nickEl.value.trim().slice(0, 32) || clientId);
+      lastUpdate.textContent = new Date(state.updatedAt).toLocaleString("id-ID");
+
+      try {
+        await set(stateRef, state);
+        setStatus("SYNCED", "ok");
+      } catch (e) {
+        console.error(e);
+        setStatus("ERROR", "err");
+        toast("Sync gagal (cek Rules RTDB / koneksi).");
+      }
+    }
+
+    async function joinRoom() {
+      const code = normalizeRoomCode(roomCodeEl.value);
+      if (!code) return alert("Room code belum diisi.");
+      roomCodeEl.value = code;
+
+      setStatus("CONNECTING…", "warn");
+
+      await leaveRoom(false);
+
+      roomCode = code;
+      const { stateRef, presenceRef, presenceListRef } = roomRefs(roomCode);
+
+      const nick = nickEl.value.trim().slice(0, 32) || "Guest";
+      await set(presenceRef, { nick, joinedAt: serverTimestamp() });
+      onDisconnect(presenceRef).remove();
+
+      onValue(presenceListRef, (snap) => {
+        const val = snap.val() || {};
+        const ids = Object.keys(val);
+        onlineCount.textContent = String(ids.length);
+        onlineList.innerHTML = ids.length
+          ? ids.map(id => "• " + escapeHtml(val[id]?.nick || "Guest")).join("<br>")
+          : "—";
+      });
+      unsubPresence = () => off(presenceListRef);
+
+      onValue(stateRef, (snap) => {
+        const remote = snap.val();
+        if (!remote) { pushState(); return; }
+        if (typeof remote.updatedAt !== "number") return;
+
+        if (remote.updatedAt > (state.updatedAt || 0)) {
+          state = remote;
+          lastUpdate.textContent = new Date(state.updatedAt).toLocaleString("id-ID");
+          rebuildSelects(); renderPlayers(); renderLog();
+        }
+        setStatus("SYNCED", "ok");
+      }, (err) => {
+        console.error(err);
+        setStatus("ERROR", "err");
+        toast("Error: cek Rules RTDB (permission).");
+      });
+      unsubState = () => off(stateRef);
+
+      const url = new URL(location.href);
+      url.searchParams.set("room", roomCode);
+      history.replaceState(null, "", url.toString());
+
+      toast(`Join room ${roomCode}`);
+    }
+
+    function copyRoomLink() {
+      const code = normalizeRoomCode(roomCodeEl.value);
+      if (!code) return alert("Isi room code dulu.");
+      const url = new URL(location.href);
+      url.searchParams.set("room", code);
+
+      navigator.clipboard?.writeText(url.toString())
+        .then(() => toast("Link room dicopy!"))
+        .catch(() => prompt("Copy manual link ini:", url.toString()));
+    }
+
+    // ===== App logic =====
+    function getPlayer(id) { return state.players.find(p => p.id === id); }
+
+    function rebuildSelects() {
+      const opts = state.players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
+      txFrom.innerHTML = opts;
+      txTo.innerHTML = opts;
+      txPlayer.innerHTML = opts;
+    }
+
+    function renderPlayers() {
+      playersList.innerHTML = "";
+      state.players.forEach(p => {
+        const el = document.createElement("div");
+        el.className = "player";
+        el.innerHTML = `
+          <div>
+            <div class="name">${escapeHtml(p.name)}</div>
+            <div class="muted" style="font-size:12px">Saldo: <span class="bal mono">${fmt(p.balance)}</span></div>
+          </div>
+          <div class="mini">
+            <button class="btn secondary small" data-act="edit" data-id="${p.id}">Edit</button>
+            <button class="btn danger small" data-act="del" data-id="${p.id}">Hapus</button>
+          </div>
+        `;
+        playersList.appendChild(el);
+      });
+
+      totalPlayers.textContent = fmt(state.players.reduce((a, p) => a + Number(p.balance || 0), 0));
+
+      playersList.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const act = btn.dataset.act;
+          if (act === "del") deletePlayer(id);
+          if (act === "edit") editPlayer(id);
+        });
+      });
+    }
+
+    function describeEntry(e) {
+      const note = e.note ? ` <span class="muted">— ${escapeHtml(e.note)}</span>` : "";
+      if (e.type === "transfer") {
+        const from = getPlayer(e.meta.from)?.name ?? "??";
+        const to = getPlayer(e.meta.to)?.name ?? "??";
+        return `<b>${escapeHtml(from)}</b> ➜ <b>${escapeHtml(to)}</b>${note}`;
+      }
+      if (e.type === "bankIn") {
+        const p = getPlayer(e.meta.player)?.name ?? "??";
+        return `<b>${escapeHtml(p)}</b> terima dari <b>Bank</b>${note}`;
+      }
+      if (e.type === "bankOut") {
+        const p = getPlayer(e.meta.player)?.name ?? "??";
+        return `<b>${escapeHtml(p)}</b> bayar ke <b>Bank</b>${note}`;
+      }
+      if (e.type === "adjust") {
+        const p = getPlayer(e.meta.player)?.name ?? "??";
+        const mode = e.meta.mode;
+        const modeText = mode === "set" ? "set saldo" : (mode === "plus" ? "tambah saldo" : "kurangi saldo");
+        return `<b>${escapeHtml(p)}</b> ${modeText}${note}`;
+      }
+      return escapeHtml(e.type) + note;
+    }
+
+    function renderLog() {
+      logBody.innerHTML = "";
+      [...state.log].reverse().forEach(entry => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="muted">${escapeHtml(entry.time || "--")}</td>
+          <td>${describeEntry(entry)}</td>
+          <td class="right mono">${fmt(entry.amount)}</td>
+        `;
+        logBody.appendChild(tr);
+      });
+      logCount.textContent = `${state.log.length} transaksi`;
+    }
+
+    function setTypeUI() {
+      const t = txType.value;
+      transferFields.style.display = (t === "transfer") ? "" : "none";
+      singleFields.style.display = (t === "bankIn" || t === "bankOut" || t === "adjust") ? "" : "none";
+      adjustFields.style.display = (t === "adjust") ? "" : "none";
+    }
+
+    async function addPlayer() {
+      const name = playerName.value.trim();
+      const start = Number(playerStart.value);
+      if (!name) return alert("Nama pemain belum diisi.");
+      if (!Number.isFinite(start)) return alert("Saldo awal tidak valid.");
+
+      state.players.push({ id: uid(), name, balance: Math.trunc(start) });
+      playerName.value = "";
+      rebuildSelects(); renderPlayers();
+      await pushState();
+    }
+
+    async function deletePlayer(id) {
+      const p = getPlayer(id);
+      if (!p) return;
+      if (!confirm(`Hapus pemain "${p.name}"?`)) return;
+
+      state.players = state.players.filter(x => x.id !== id);
+      state.log = state.log.filter(e => {
+        const eff = e.effects || [];
+        const involved = eff.some(a => a.playerId === id);
+        const meta = e.meta || {};
+        return !involved && meta.from !== id && meta.to !== id && meta.player !== id;
+      });
+
+      rebuildSelects(); renderPlayers(); renderLog();
+      await pushState();
+    }
+
+    async function editPlayer(id) {
+      const p = getPlayer(id);
+      if (!p) return;
+      const newName = prompt("Ubah nama pemain:", p.name);
+      if (newName === null) return;
+      const n = newName.trim();
+      if (!n) return alert("Nama tidak boleh kosong.");
+      p.name = n;
+
+      rebuildSelects(); renderPlayers(); renderLog();
+      await pushState();
+    }
+
+    function buildEffects(deltas) {
+      const effects = [];
+      for (const d of deltas) {
+        const p = getPlayer(d.playerId);
+        if (!p) continue;
+        const before = Number(p.balance || 0);
+        const after = before + Number(d.delta || 0);
+        effects.push({ playerId: d.playerId, delta: Number(d.delta || 0), before, after });
+      }
+      return effects;
+    }
+
+    function applyEffects(effects) {
+      for (const fx of effects) {
+        const p = getPlayer(fx.playerId);
+        if (!p) continue;
+        p.balance = fx.after;
+      }
+    }
+
+    async function doTransaction() {
+      const t = txType.value;
+      if (state.players.length < 1) return alert("Tambahkan pemain dulu.");
+
+      const note = txNote.value.trim();
+      let amount = Math.trunc(Number(txAmount.value));
+      if (t !== "adjust" || adjustMode.value !== "set") {
+        if (!Number.isFinite(amount) || amount <= 0) return alert("Jumlah harus angka > 0.");
+      }
+
+      const entry = { id: uid(), ts: Date.now(), time: nowHM(), type: t, amount: Math.abs(amount), note, meta: {}, effects: [] };
+
+      if (t === "transfer") {
+        const from = txFrom.value, to = txTo.value;
+        if (from === to) return alert("Pilih 'Dari' dan 'Ke' yang berbeda.");
+        const pFrom = getPlayer(from), pTo = getPlayer(to);
+        if (!pFrom || !pTo) return alert("Pemain tidak valid.");
+        if (pFrom.balance < amount) return alert(`Saldo ${pFrom.name} tidak cukup.`);
+
+        entry.meta = { from, to };
+        entry.effects = buildEffects([{ playerId: from, delta: -amount }, { playerId: to, delta: +amount }]);
+      }
+
+      if (t === "bankIn") {
+        const pid = txPlayer.value;
+        if (!getPlayer(pid)) return alert("Pemain tidak valid.");
+        entry.meta = { player: pid };
+        entry.effects = buildEffects([{ playerId: pid, delta: +amount }]);
+      }
+
+      if (t === "bankOut") {
+        const pid = txPlayer.value;
+        const p = getPlayer(pid);
+        if (!p) return alert("Pemain tidak valid.");
+        if (p.balance < amount) return alert(`Saldo ${p.name} tidak cukup.`);
+
+        entry.meta = { player: pid };
+        entry.effects = buildEffects([{ playerId: pid, delta: -amount }]);
+      }
+
+      if (t === "adjust") {
+        const pid = txPlayer.value;
+        const p = getPlayer(pid);
+        if (!p) return alert("Pemain tidak valid.");
+        const mode = adjustMode.value;
+        entry.meta = { player: pid, mode };
+
+        if (mode === "set") {
+          const setTo = Math.trunc(Number(txAmount.value));
+          if (!Number.isFinite(setTo) || setTo < 0) return alert("Nilai set saldo harus angka >= 0.");
+          entry.amount = setTo;
+          entry.effects = [{
+            playerId: pid,
+            delta: setTo - Number(p.balance || 0),
+            before: Number(p.balance || 0),
+            after: setTo
+          }];
+        } else if (mode === "plus") {
+          entry.effects = buildEffects([{ playerId: pid, delta: +amount }]);
+        } else {
+          if (p.balance < amount) return alert(`Saldo ${p.name} tidak cukup.`);
+          entry.effects = buildEffects([{ playerId: pid, delta: -amount }]);
+        }
+      }
+
+      applyEffects(entry.effects);
+      state.log.push(entry);
+
+      txAmount.value = "";
+      txNote.value = "";
+
+      renderPlayers(); renderLog();
+      await pushState();
+    }
+
+    async function undoLast() {
+      const last = state.log.pop();
+      if (!last) return alert("Belum ada transaksi.");
+      for (const fx of last.effects || []) {
+        const p = getPlayer(fx.playerId);
+        if (!p) continue;
+        p.balance = fx.before;
+      }
+      renderPlayers(); renderLog();
+      await pushState();
+    }
+
+    async function resetAll() {
+      if (!confirm("Reset semua data pemain & transaksi?")) return;
+      state = { players: [], log: [], updatedAt: 0, updatedBy: "" };
+      rebuildSelects(); renderPlayers(); renderLog();
+      await pushState();
+    }
+
+    function exportJSON() {
+      jsonBox.value = JSON.stringify(state, null, 2);
+      jsonBox.focus(); jsonBox.select();
+    }
+
+    async function importJSON() {
+      const raw = jsonBox.value.trim();
+      if (!raw) return alert("Paste JSON dulu di kotak.");
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.players || !parsed.log) throw new Error("format");
+
+        parsed.players = parsed.players.map(p => ({
+          id: String(p.id || uid()),
+          name: String(p.name || "Pemain"),
+          balance: Math.trunc(Number(p.balance || 0))
+        }));
+
+        parsed.log = (parsed.log || []).map(e => ({
+          id: String(e.id || uid()),
+          ts: Number(e.ts || Date.now()),
+          time: String(e.time || nowHM()),
+          type: String(e.type || "unknown"),
+          amount: Math.trunc(Number(e.amount || 0)),
+          note: String(e.note || ""),
+          meta: e.meta || {},
+          effects: Array.isArray(e.effects) ? e.effects : []
+        }));
+
+        state = { ...parsed, updatedAt: state.updatedAt || 0, updatedBy: state.updatedBy || "" };
+        rebuildSelects(); renderPlayers(); renderLog();
+        await pushState();
+        toast("Import & sync sukses.");
+      } catch {
+        alert("JSON tidak valid / format salah.");
+      }
+    }
+
+    // events
+    joinBtn.addEventListener("click", joinRoom);
+    leaveBtn.addEventListener("click", () => leaveRoom(true));
+    copyLinkBtn.addEventListener("click", copyRoomLink);
+
+    addPlayerBtn.addEventListener("click", addPlayer);
+    playerName.addEventListener("keydown", (e) => { if (e.key === "Enter") addPlayer(); });
+
+    txType.addEventListener("change", setTypeUI);
+    doTxBtn.addEventListener("click", doTransaction);
+    undoBtn.addEventListener("click", undoLast);
+    resetBtn.addEventListener("click", resetAll);
+
+    exportBtn.addEventListener("click", exportJSON);
+    importBtn.addEventListener("click", importJSON);
+
+    // auto-join ?room=
+    const url = new URL(location.href);
+    const roomFromUrl = url.searchParams.get("room");
+    if (roomFromUrl) {
+      roomCodeEl.value = roomFromUrl;
+      setTimeout(() => joinRoom(), 150);
+    }
+
+    setTypeUI();
+    renderPlayers();
+    renderLog();
+    setStatus("OFFLINE", "warn");
+  </script>
+</body>
+
+</html>
